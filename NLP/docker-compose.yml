@@ -1,0 +1,25 @@
+# docker-compose -f docker-compose.yml --env-file .env up -d --build
+
+services:
+  pytorch:
+    build: 
+      context: .
+      dockerfile: Dockerfile.pytorch
+    ports:
+      - "${JUPYTER_PORT}:${JUPYTER_PORT}"
+    volumes:
+      - ./notebooks:${JUPYTER_DIR}
+    environment:
+      JUPYTER_PORT: ${JUPYTER_PORT}
+      JUPYTER_DIR: ${JUPYTER_DIR}
+      JUPYTER_NOTEBOOK_PASSWORD: ${JUPYTER_PASSWORD}
+      JUPYTER_APP_ALLOW_ORIGIN: ${JUPYTER_APP_ALLOW_ORIGIN}
+      JUPYTER_APP_IP: ${JUPYTER_APP_IP}
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
