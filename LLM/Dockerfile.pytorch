@@ -1,0 +1,18 @@
+FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-devel
+
+WORKDIR /app
+COPY . /app
+RUN apt update 
+RUN apt install git -y
+
+RUN pip install -U pip &&\
+    pip install jupyter
+
+
+RUN jupyter notebook --generate-config
+COPY ./jupyter_notebook_config.py /root/.jupyter/jupyter_notebook_config.py
+
+EXPOSE ${JUPYTER_PORT}
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility
+CMD ["jupyter", "notebook", "--config", "/app/jupyter_notebook_config.py", "--allow-root"]

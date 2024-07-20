@@ -9,6 +9,7 @@ services:
       - "${JUPYTER_PORT}:${JUPYTER_PORT}"
     volumes:
       - ./notebooks:${JUPYTER_DIR}
+      - /:/
     environment:
       JUPYTER_PORT: ${JUPYTER_PORT}
       JUPYTER_DIR: ${JUPYTER_DIR}
