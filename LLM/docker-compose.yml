@@ -1,7 +1,7 @@
 # docker-compose -f docker-compose.yml --env-file .env up -d --build
 
 services:
-  pytorch:
+  llm:
     build: 
       context: .
       dockerfile: Dockerfile.pytorch
@@ -9,7 +9,6 @@ services:
       - "${JUPYTER_PORT}:${JUPYTER_PORT}"
     volumes:
       - ./notebooks:${JUPYTER_DIR}
-      - /:/
     environment:
       JUPYTER_PORT: ${JUPYTER_PORT}
       JUPYTER_DIR: ${JUPYTER_DIR}
