@@ -1,14 +1,17 @@
 # Base Image
-FROM pytorch/pytorch:2.4.1-cuda12.4-cudnn9-devel
+# FROM python:3.10.16-slim-bullseye
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-devel
 
 WORKDIR /app
-COPY . /app
-RUN apt update 
+COPY ./jupyter_notebook_config.py /app
+RUN apt update -y
 RUN apt install git -y
+RUN apt install git-lfs -y
 
 RUN pip install -U pip &&\
-    pip install jupyter
-
+    pip install jupyter &&\
+    pip install transformers==4.47.1
+# pip install jupyter 
 
 RUN jupyter notebook --generate-config
 COPY ./jupyter_notebook_config.py /root/.jupyter/jupyter_notebook_config.py

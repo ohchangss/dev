@@ -8,13 +8,59 @@ services:
     ports:
       - "${JUPYTER_PORT}:${JUPYTER_PORT}"
     volumes:
-      - ./notebooks:${JUPYTER_DIR}
+      - ./volumes/notebooks:${JUPYTER_DIR}
     environment:
       JUPYTER_PORT: ${JUPYTER_PORT}
       JUPYTER_DIR: ${JUPYTER_DIR}
       JUPYTER_NOTEBOOK_PASSWORD: ${JUPYTER_PASSWORD}
       JUPYTER_APP_ALLOW_ORIGIN: ${JUPYTER_APP_ALLOW_ORIGIN}
       JUPYTER_APP_IP: ${JUPYTER_APP_IP}
+      PORT_RETRIES: ${PORT_RETRIES}
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+# # ######################### gradio#########################
+
+  gradio:
+    build:
+      context: .
+      dockerfile: Dockerfile.gradio
+    # (만약 llm 서비스를 사용해야 한다면 depends_on 추가)
+    # depends_on:
+    #   - llm
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./volumes/gradio:/app/gradio
+    # environment:
+
+# ##########################triton ###########################
+
+  triton:
+    build: 
+      context: .
+      dockerfile: Dockerfile.triton
+    ports:
+      #TRITON
+      - "${TRITON_PORT_HTTP_gRPC_API}:${TRITON_PORT_HTTP_gRPC_API}"
+      - "${TRITON_PORT_gRPC_API}:${TRITON_PORT_gRPC_API}"
+      - "${TRITON_PORT_Prometheus_metrics}:${TRITON_PORT_Prometheus_metrics}"
+    volumes:
+      - ${TRITON_DIR_VOLUME}
+
+    environment:
+      # TRITON
+      TRITON_PORT_HTTP_gRPC_API : ${TRITON_PORT_HTTP_gRPC_API}
+      TRITON_PORT_gRPC_API : ${TRITON_PORT_gRPC_API}
+      TRITON_PORT_Prometheus_metrics : ${TRITON_PORT_Prometheus_metrics}
+
+      TRITON_MODEL_DIR : ${TRITON_MODEL_DIR}
 
     deploy:
       resources:
