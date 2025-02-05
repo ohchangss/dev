@@ -10,7 +10,9 @@ RUN apt install git-lfs -y
 
 RUN pip install -U pip &&\
     pip install jupyter &&\
-    pip install transformers==4.47.1
+    pip install transformers==4.47.1 accelerate==0.26
+    # flash-attn==2.4.2
+    # 
 # pip install jupyter 
 
 RUN jupyter notebook --generate-config

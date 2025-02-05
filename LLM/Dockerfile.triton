@@ -1,11 +1,12 @@
 # Dockerfile.triton
 FROM nvcr.io/nvidia/tritonserver:24.04-trtllm-python-py3
+# FROM nvcr.io/nvidia/tritonserver:24.11-trtllm-python-py3
 
 # (옵션) 필요 시, 추가 패키지 설치
-RUN apt-get update && apt-get install -y
+RUN apt-get update && apt-get install -y 
 RUN pip install transformers==4.47.1 accelerate==0.26.0
-
-# 작업 디렉터리 설정
+# tensor-rt installer
+# 작업 디렉터리 설정    
 WORKDIR ${TRITON_DIR_MODEL_DIR}
 
 # Triton 서버 실행 시 참고할 환경변수 (옵션)
@@ -16,6 +17,15 @@ EXPOSE ${TRITON_PORT_HTTP_gRPC_API}
 EXPOSE ${TRITON_PORT_gRPC_API}
 EXPOSE ${TRITON_PORT_Prometheus_metrics}
 
+
 # CMD 또는 ENTRYPOINT 설정
-CMD ["tritonserver", "--model-repository=/models", "--model-control-mode=none", "--log-file=/opt/tritonserver/triton.log"]
+# PROD ## 필요한 모델만 API호출을 통하여 로드 하도록 "--model-control-mode=explicit" 옵션 추가가
+CMD ["tritonserver", "--model-repository=/models","--model-control-mode=explicit", "--log-file=/opt/tritonserver/triton.log"]
+# DEV
 # CMD ["sleep", "infinity"]
+
+# TEST
+# tritonserver --model-repository=/models --model-control-mode=poll --repository-poll-secs=5 --log-file=/opt/tritonserver/triton.log
+
+
+###

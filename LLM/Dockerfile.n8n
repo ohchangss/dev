@@ -1,0 +1,23 @@
+# Dockerfile.triton
+FROM docker.n8n.io/n8nio/n8n
+
+
+CMD ["sleep", "infinity"]
+
+
+
+
+###Tensor RT
+# "/models/llama3.2-3B/1"
+# python3 convert_checkpoint.py --model_dir /models/llama3.2-3B/1/Llama-3.2-3B-Instruct \
+#                             --output_dir /rt_build/tllm_checkpoint_1gpu_tp1 \
+#                             --dtype bfloat16 \
+#                             --tp_size 1
+
+# trtllm-build --checkpoint_dir ./tllm_checkpoint_1gpu_tp1 \
+#             --output_dir ./tmp/llama/8B/trt_engines/fp16/1-gpu/ \
+#             --gemm_plugin auto
+
+
+
+###

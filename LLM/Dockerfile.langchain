@@ -1,0 +1,19 @@
+FROM python:3.11-slim
+
+# Gradio 설치
+RUN pip install --no-cache-dir gunicorn langchain-nvidia-trt fastapi
+
+# 작업 디렉토리 생성
+WORKDIR /app
+COPY /gradio /app/gradio
+WORKDIR /app/gradio
+
+EXPOSE 7861
+
+
+# PROD
+# CMD ["uvicorn", "gradio_app:app","--host", "0.0.0.0", "--port", "7861", "--reload"]
+
+# DEV
+CMD ["sleep", "infinity"]
+

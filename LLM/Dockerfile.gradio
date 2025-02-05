@@ -1,7 +1,8 @@
 FROM python:3.10-slim
 
 # Gradio 설치
-RUN pip install --no-cache-dir gradio
+RUN pip install --no-cache-dir gradio gunicorn tritonclient[http]
+
 
 # 작업 디렉토리 생성
 WORKDIR /app
@@ -10,4 +11,10 @@ WORKDIR /app/gradio
 
 EXPOSE 7860
 
-CMD ["python", "gradio_app.py"]
+
+# PROD
+CMD ["uvicorn", "gradio_app:app","--host", "0.0.0.0", "--port", "7860", "--reload"]
+
+# DEV
+# CMD ["sleep", "infinity"]
+

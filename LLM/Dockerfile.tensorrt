@@ -1,0 +1,43 @@
+# Dockerfile.triton
+FROM nvcr.io/nvidia/tritonserver:24.11-trtllm-python-py3
+
+# (옵션) 필요 시, 추가 패키지 설치
+# RUN apt-get update && apt-get install -y && apt-get -y install libopenmpi-dev
+RUN apt-get update && apt-get install -y && apt-get -y install git && apt-get -y install tensorrt
+RUN pip install --upgrade pip && pip install wheel
+# RUN apt-get -y install libopenmpi-dev  && pip install tensorrt_llm
+
+
+WORKDIR /
+
+#### CLONE or COPY select
+#1.COLNE
+# RUN git clone https://github.com/NVIDIA/TensorRT-LLM
+# RUN pip install -r /TensorRT-LLM/examples/llama/requirements.txt
+# RUN pip install --upgrade transformers
+
+#2.COPY and in container pip install
+COPY /volumes/tensor-rt/TensorRT-LLM /TensorRT-LLM
+
+#### CLONE or COPY select
+
+
+CMD ["sleep", "infinity"]
+
+
+
+
+###Tensor RT
+# "/models/llama3.2-3B/1"
+# python3 convert_checkpoint.py --model_dir /models/llama3.2-1B-Instruct/1 \
+#                             --output_dir /rt_build/tllm_checkpoint_1gpu_tp1 \
+#                             --dtype bfloat16 \
+#                             --tp_size 1
+
+# trtllm-build --checkpoint_dir /rt_build/tllm_checkpoint_1gpu_tp1 \
+#             --output_dir /models/llama3.2-1B-Instruct/bfp16/1-gpu/ \
+#             --gemm_plugin auto
+
+
+
+###
