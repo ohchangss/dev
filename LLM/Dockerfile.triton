@@ -1,5 +1,5 @@
 # Dockerfile.triton
-FROM nvcr.io/nvidia/tritonserver:24.04-trtllm-python-py3
+FROM nvcr.io/nvidia/tritonserver:24.11-trtllm-python-py3
 # FROM nvcr.io/nvidia/tritonserver:24.11-trtllm-python-py3
 
 # (옵션) 필요 시, 추가 패키지 설치

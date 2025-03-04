@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 # Gradio 설치
 RUN pip install --no-cache-dir gradio gunicorn tritonclient[http]
