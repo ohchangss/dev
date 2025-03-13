@@ -9,6 +9,8 @@ volumes:
 
 networks:
   demo:
+  llm_default:  # Triton이 속한 네트워크 추가
+    external: true
 
 x-n8n: &service-n8n
   image: n8nio/n8n:latest
@@ -48,7 +50,9 @@ x-init-ollama: &init-ollama
 
 services:
   fastapi-server:
-    networks: ['demo']
+    networks: 
+      - llm_default
+      - demo 
     container_name: fastapi-server
     environment:
       - DEBUG_MODE=${DEBUG_MODE}
@@ -94,12 +98,19 @@ services:
     <<: *service-n8n
     container_name: n8n
     restart: unless-stopped
+    user: root  # 이 줄 추가
+
     ports:
       - 5678:5678
     volumes:
       - n8n_storage:/home/node/.n8n
+      - ./n8n_custom_node:/home/node/.n8n/custom/ #추가
       - ./n8n/backup:/backup
       - ./shared:/data/shared
+    environment:
+      - N8N_ENCRYPTION_KEY=10dbc1b045c703b23b5fdced2112db2be92772e41f023314d1818b48f53ed4e9 #추가
+      - N8N_CUSTOM_EXTENSIONS=/home/node/.n8n/custom #추가
+      - NODE_PATH=/home/node/.n8n/custom/n8n-nodes-starter/node_modules
 
     depends_on:
       postgres:

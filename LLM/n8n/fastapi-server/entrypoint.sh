@@ -5,5 +5,8 @@ if [ "$DEBUG_MODE" = "True" ]; then
     exec sleep infinity
 else
     echo "Production mode enabled. Starting Uvicorn..."
-    exec uvicorn app:app --host 0.0.0.0 --port 9999 --reload
+    # exec uvicorn app:app --host 0.0.0.0 --port 9999 --reload
+    python app.py
+    echo "Uvicorn on"
+
 fi
