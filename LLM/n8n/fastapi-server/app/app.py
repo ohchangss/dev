@@ -1,22 +1,39 @@
-import controller as c
+# import controller
 from fastapi import FastAPI
-from pydantic import BaseModel
-from bs4 import BeautifulSoup
-from trafilatura import extract
 import uvicorn
-import tritonclient.grpc as grpcclient
+from fastapi_router_controller import Controller, ControllersTags
+from service.n8n_ollama_trt_service import TritonService  # ✅ 새로운 서비스 클래스 가져오기
+from contextlib import asynccontextmanager
+
+from service.n8n_ollama_trt_service import TritonService  # ✅ 서비스 로드
+import controller.n8n_ollama_trt_controller  # ✅ 컨트롤러 로드
+
 
 from fastapi_router_controller import Controller, ControllersTags
 
 TRITON_SERVER_URL = "llm-triton-1.llm_default:8001"
-CLIENT =  grpcclient.InferenceServerClient(url=TRITON_SERVER_URL)
+# CLIENT =  grpcclient.InferenceServerClient(url=TRITON_SERVER_URL)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("🚀 Triton Service 시작...")
+    app.state.triton_service = TritonService(TRITON_SERVER_URL)  # Triton 서비스 인스턴스 생성
+    yield
+    print("🛑 Triton Service 종료...")
+    await app.state.triton_service.close()  # 서비스 종료 시 gRPC 클라이언트 해제
 
 app = FastAPI(
     title='{}'.format('fast api LLM'),
     description='LLM 관리 API',
     version='0.0.1',
     docs_url="/docs",
-    openapi_tags=ControllersTags)
+    openapi_tags=ControllersTags,
+        lifespan=lifespan  # ✅ FastAPI 실행/종료 시 lifecycle 관리
+)
+
+app.state.TRITON_SERVER_URL = TRITON_SERVER_URL
+
+
 
 for router in Controller.routers():
     app.include_router(router)
