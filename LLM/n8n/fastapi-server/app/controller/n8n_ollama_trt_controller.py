@@ -1,7 +1,15 @@
+"""
+
+
+
+"""
+
+
 from fastapi_router_controller import Controller
 from fastapi import APIRouter
 from pydantic import BaseModel
 from app import TRITON_SERVER_URL
+import asyncio
 # import tritonclient.grpc as grpcclient
 from fastapi import APIRouter, Request
 
@@ -34,10 +42,39 @@ class OllamaTritonController():
     async def get_ollama_models_dummy(self, request: Request):
         """설치된 모델 리스트 가져오기"""
         # do : 지금은 모델 정보만 정확하게 받음 추후 config.pbtxt에서 정보 파싱해서 사용가능하게 바꿔야함 // onnx 변환 및 triton변경 필요함 
+
         service = await self.get_service(request)
-        self.loaded_model_name = await service.get_model_name()
+        model=await service.get_model_name()
+        self.loaded_model_name = dict(model)['model_name']
+        # self.loaded_model_name = await service.get_model_name()
         return {"models": [{"name": self.loaded_model_name, "modified_at": "2025-03-11T12:34:56Z", "size": 1}]}
-        
+
+    @controller.route.post('/api/model_load', tags=['ollama-controller'], summary="Load Ollama Model")
+    async def load_ollama_models(self, request: Request):
+        """설치된 모델 로드 하기"""
+        # service = await self.get_service(request)
+        param=dict(request)
+        model_name=param['model']
+        try:
+            # 1. 모델 로드 요청
+            await self.client.load_model(model_name=model_name)
+            print(f"✅ 모델 '{model_name}' 로드 요청 완료")
+
+            # 2. 준비될 때까지 확인
+            for i in range(10):  # 최대 10회 재시도
+                is_ready = await self.client.is_model_ready(model_name=model_name)
+                if is_ready:
+                    return {"status": 200,
+                           "msg":f"✅ 모델 '{model_name}' 가 성공적으로 로드되었습니다."}
+                await asyncio.sleep(0.5)  # 0.5초 대기 후 재시도
+
+            return {"status": 400,
+                "error": f"⏱ 모델 '{model_name}' 가 일정 시간 내에 준비되지 않았습니다."}
+
+        except Exception as e:
+            return {"status":400,
+                "error": str(e)}
+
     @controller.route.post('/api/chat', tags=['ollama-controller'], summary="API POST Ollama Controller")
     async def ollama_generate(self, request: Request):
         """

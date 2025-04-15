@@ -1,12 +1,10 @@
-# import controller
+import controller
 from fastapi import FastAPI
 import uvicorn
 from fastapi_router_controller import Controller, ControllersTags
 from service.n8n_ollama_trt_service import TritonService  # ✅ 새로운 서비스 클래스 가져오기
 from contextlib import asynccontextmanager
 
-from service.n8n_ollama_trt_service import TritonService  # ✅ 서비스 로드
-import controller.n8n_ollama_trt_controller  # ✅ 컨트롤러 로드
 
 
 from fastapi_router_controller import Controller, ControllersTags
@@ -37,8 +35,7 @@ app.state.TRITON_SERVER_URL = TRITON_SERVER_URL
 
 for router in Controller.routers():
     app.include_router(router)
-
-
+    
 if __name__ == '__main__':
     status = True
     # uvicorn.run("__main__:app", host='localhost', port=5556, reload=True) #5554
