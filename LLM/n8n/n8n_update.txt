@@ -1,0 +1,8 @@
+# n8n 버전올려서 다운로드
+# docker-compose -f docker-compose-n8n.yml --env-file .env pull n8n
+
+# n8n down -> -v 옵션 사용시 모든 데이터 삭제됨
+# docker-compose -f docker-compose-n8n.yml --env-file .env down
+
+# n8n docker compose up
+# docker-compose -f docker-compose-n8n.yml --env-file .env --project-name n8n up -d

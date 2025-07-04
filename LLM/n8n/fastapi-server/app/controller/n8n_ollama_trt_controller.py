@@ -83,8 +83,7 @@ class OllamaTritonController():
         {'role': 'user', 'content': 'asd'}], 'stream': True}
         
         """
-        requests = await request.json()
-        requests = dict(requests)
+        requests = dict(request.json())
         """Triton에 텍스트 생성 요청"""     
         service = await self.get_service(request)
         self.loaded_model_name = requests['model']

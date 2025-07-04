@@ -1,0 +1,8 @@
+uvicorn
+anyio
+starlette
+fastapi
+sse_starlette
+starlette_context
+pydantic_settings
+# python-dotenv

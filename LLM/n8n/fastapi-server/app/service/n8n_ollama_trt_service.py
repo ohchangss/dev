@@ -26,6 +26,12 @@
 3. 모델 상태 확인 : is_model_ready(model_name) 
 4. 모델 로드 : load_model(model_name)
 
+
+
+- langchain 에서 aiagent를 사용하여 llm을 사용할때
+- llm의 __call__ 메서드를 사용하여 모델을 호출하며 stop을 통해 출력 종료를 제어한다.
+
+
 """
 
 from pyexpat.errors import messages
@@ -35,16 +41,74 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain.chains import LLMChain
 from langchain.chat_models.base import BaseChatModel
 import asyncio
+from typing import Optional, List
+import tritonclient.grpc.aio as grpcclient_async
 
 class TritonService:
+    """
+    Triton 서버와 통신하는 서비스 클래스
+        - gRPC 클라이언트를 사용하여 Triton 서버와 비동기 통신을 수행
+        input으로 텍스트를 받고 
+        output으로 텍스트를 변환함
+    """
+    triton_url: str
+    model_name: str
+    tokenizer: any  # HuggingFace tokenizer
+    max_tokens: int = 512
+
     def __init__(self, triton_url: str):
         """Triton Service 초기화 (gRPC 클라이언트 생성)"""
         self.triton_url = triton_url
         self.client = grpcclient.InferenceServerClient(url=triton_url)  # ✅ gRPC 클라이언트 생성
 
+    def _acall(self, prompt: str, stop: Optional[List[str]] = None) -> str:
+
+        # input 변환
+        input_data=np.array([prompt], dtype=object)
+        inputs = grpcclient.InferInput(
+                                        name="text_input",
+                                        datatype="BYTES",
+                                        shape = [1]    
+                                    )
+        inputs.set_data_from_numpy(input_data)
+        outputs = grpcclient.InferRequestedOutput("text_output")
+        response = self.client.infer(model_name=self.model_name, inputs=[inputs], outputs=[outputs])
+        output_text = response.as_numpy("text_output")
+        return eval(output_text[0][-1].decode("utf-8"))['content']
+
+
+
+        # Triton 클라이언트
+        client = grpcclient.InferenceServerClient(url=self.triton_url)
+
+        # Triton input 설정
+        input_ids = inputs["input_ids"]
+        input_tensor = grpcclient.InferInput(
+            name="input_ids",
+            shape=input_ids.shape,
+            datatype="INT32"
+        )
+        input_tensor.set_data_from_numpy(input_ids.numpy())
+
+        # 요청 보내기
+        response = client.infer(
+            model_name=self.model_name,
+            inputs=[input_tensor],
+            outputs=[grpcclient.InferRequestedOutput("output_ids")]
+        )
+
+        # 응답 파싱
+        output_ids = torch.tensor(response.as_numpy("output_ids"))
+        decoded = self.tokenizer.decode(output_ids[0], skip_special_tokens=True)
+
+        return decoded
+
+
+
     async def close(self):
         """서비스 종료 시 gRPC 클라이언트 해제"""
         await self.client.close()
+
     async def get_model_name(self):
         """모델 네임 파싱"""
         try:
@@ -106,9 +170,12 @@ class TritonService:
         
     async def infer_text_python(self, model_name: str, messages: str):
         try:
-            prompt=ChatPromptTemplate.from_messages(messages)            
+            
+            # print(model_name,messages) ="llama3.2-1B-Instruct [{'role': 'system', 'content': 'You are a helpful assistant'}, {'role': 'user', 'content': 'zxcvzxcvzxv'}]"
+            prompt=ChatPromptTemplate.from_messages(messages)
+            # langchain_messages=prompt.format_messages(messages)            
             # 모델 실행
-            response = await self.invoke(langchain_messages,model_name)
+            response = await self.invoke(prompt,model_name)
             print(response)
             return             {
                                 "model": "llama3.2-1B-Instruct",
@@ -121,22 +188,41 @@ class TritonService:
         except Exception as e:
             return {"error": str(e)}
 
+    async def invoke(self, messages: str, model_name: str):
+        """Triton 서버에 요청을 보내고 응답을 받는 메서드"""
+        try:
+            # 1. Triton 서버 상태 확인
+            if not await self.is_server_live():
+                return {"error": "Triton 서버가 살아있지 않습니다."}
 
-class TritonLLM(BaseChatModel):
-    def _call(self, messages, stop=None, run_manager=None):
-        user_message = messages[-1].content  # 마지막 user 메시지
-        triton_payload = {
-            "inputs": [{"name": "input_text", "shape": [1], "datatype": "BYTES", "data": [user_message]}]
-        }
+            # 2. 모델 로드 및 준비 상태 확인
+            model_status = await self.load_and_check_model(model_name)
+            if "error" in model_status:
+                return model_status
 
-        response = requests.post(TRITON_URL, json=triton_payload)
-        result = response.json()
-        model_response = result.get("outputs", [{}])[0].get("data", [""])[0]
+            # 3. 모델 추론 요청
+            response = await self.model(messages, model_name)
+            return response
+
+        except Exception as e:
+            return {"error": str(e)}
         
-        return model_response
 
-    def _identifying_params(self):
-        return {}
+# class TritonLLM(BaseChatModel):
+#     def _call(self, messages, stop=None, run_manager=None):
+#         user_message = messages[-1].content  # 마지막 user 메시지
+#         triton_payload = {
+#             "inputs": [{"name": "input_text", "shape": [1], "datatype": "BYTES", "data": [user_message]}]
+#         }
 
-    def _llm_type(self):
-        return "triton_llm"
+#         response = requests.post(TRITON_URL, json=triton_payload)
+#         result = response.json()
+#         model_response = result.get("outputs", [{}])[0].get("data", [""])[0]
+        
+#         return model_response
+
+#     def _identifying_params(self):
+#         return {}
+
+#     def _llm_type(self):
+#         return "triton_llm"

@@ -1,0 +1,37 @@
+# === 베이스: CUDA 12.1, Python 3.10 환경
+FROM nvidia/cuda:12.1.0-devel-ubuntu22.04
+
+
+
+# === 기본 패키지 설치
+RUN apt-get update && apt-get install -y \
+    python3.10 python3-pip python3.10-venv python3.10-dev \
+    build-essential cmake ninja-build git wget curl \
+    autoconf automake libtool \
+    && rm -rf /var/lib/apt/lists/*
+
+# === python3 -> python 링크 설정
+RUN ln -sf /usr/bin/python3.10 /usr/bin/python && \
+    ln -sf /usr/bin/pip3 /usr/bin/pip
+
+WORKDIR /workspace
+
+# === pip 최신화
+RUN pip install --upgrade pip
+COPY requirements.txt .
+# RUN pip install -r requirements.txt
+# ENV CMAKE_ARGS="-DGGML_CUDA=on -DLLAMA_CUDA_FORCE_MMQ=on -DLLAMA_F16_VRAM=on -DBUILD_SHARED_LIBS=OFF"
+# ENV FORCE_CMAKE=1
+
+# === llama-cpp-python 설치 (GPU 버전)
+# RUN pip install llama-cpp-python --force-reinstall --upgrade --no-binary :all: --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu121
+
+# RUN CMAKE_ARGS=-DLLAMA_CUBLAS=on FORCE_CMAKE=1 pip install llama-cpp-python --force-reinstall --upgrade --no-cache-dir
+# === 서버 실행용 포트 열기
+EXPOSE 8000
+
+
+# === 기본 커맨드: bash 진입
+CMD ["sleep", "infinity"]
+
+# CMD ["/bin/bash"]

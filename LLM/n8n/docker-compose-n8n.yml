@@ -1,4 +1,7 @@
-# docker-compose -f docker-compose-n8n.yml --env-file .env --project-name n8n up -d --build --no-recreate
+# docker-compose -f docker-compose-n8n.yml --env-file .env --project-name n8n build --no-cache
+# docker-compose -f docker-compose-n8n.yml --env-file .env --project-name n8n up -d --no-recreate
+
+# docker-compose -f docker-compose-n8n.yml --env-file .env down
 # http://localhost:5678/
 
 volumes:
@@ -6,11 +9,14 @@ volumes:
   postgres_storage:
   ollama_storage:
   qdrant_storage:
+  chroma_data:
 
 networks:
   demo:
   llm_default:  # Triton이 속한 네트워크 추가
     external: true
+
+
 
 x-n8n: &service-n8n
   image: n8nio/n8n:latest
@@ -49,11 +55,37 @@ x-init-ollama: &init-ollama
     - "sleep 3; OLLAMA_HOST=ollama:11434 ollama pull llama3.2"
 
 services:
+
+
+  # llama-cpp-python-server:
+  #   build:
+  #     context: ./llama-cpp-python
+  #     dockerfile: Dockerfile.llama-cpp-python
+  #   container_name: llama-cpp-python-gpu-server
+  #   ports:
+  #     - "8889:8000"
+  #   volumes:
+  #     - ./models:/models  # 모델 파일을 이 경로에 두세요
+  #     - ./llama-cpp-python:/workdir
+
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all
+  #             capabilities: [gpu]
+  #   command: >
+  #     sleep infinity;
+  #     python3 -m llama_cpp.server --model /models/EXAONE-3.5-7.8B-Instruct-q4_k_m/EXAONE-3.5-7.8B-Instruct-q4_k_m.gguf --n_gpu_layers 32 --host 0.0.0.0 --port 8000
+
+
   fastapi-server:
     networks: 
       - llm_default
       - demo 
     container_name: fastapi-server
+    restart: unless-stopped
     environment:
       - DEBUG_MODE=${DEBUG_MODE}
     build:
@@ -104,12 +136,23 @@ services:
       - 5678:5678
     volumes:
       - n8n_storage:/home/node/.n8n
-      - ./n8n_custom_node:/home/node/.n8n/custom/ #추가
+      # - ./n8n_custom_node:/home/node/.n8n/custom/ #추가
       - ./n8n/backup:/backup
       - ./shared:/data/shared
     environment:
-      - N8N_ENCRYPTION_KEY=10dbc1b045c703b23b5fdced2112db2be92772e41f023314d1818b48f53ed4e9 #추가
-      - N8N_CUSTOM_EXTENSIONS=/home/node/.n8n/custom #추가
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_POSTGRESDB_SCHEMA=public
+      - GENERIC_TIMEZONE=Asia/Seoul
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - N8N_PERSONALIZATION_ENABLED=false
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_CUSTOM_EXTENSIONS=/home/node/.n8n/custom
+      - NODE_ENV=production
       - NODE_PATH=/home/node/.n8n/custom/n8n-nodes-starter/node_modules
 
     depends_on:
@@ -154,3 +197,96 @@ services:
     <<: *init-ollama
     depends_on:
       - ollama-gpu
+
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-server
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./models:/root/.ollama/models  # ✅ 여기에 너의 gguf 모델 넣으면 됨
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_MODELS=/root/.ollama/models
+      - OLLAMA_MAX_LOADED_MODELS=1
+      - OLLAMA_KEEP_ALIVE=300m
+      - OLLAMA_GPU_OVERHEAD=0
+      - OLLAMA_KV_CACHE_TYPE=ram
+      - OLLAMA_LOAD_TIMEOUT=300m
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: chroma
+    ports:
+      - "8012:8000"  # REST API 기본 포트
+    volumes:
+      - ./chroma_data:/chroma/chroma  # 데이터를 지속적으로 보존하기 위한 볼륨
+    environment:
+      - IS_PERSISTENT=TRUE
+    restart: unless-stopped
+
+
+
+  # vLLM 서버 (Main LLM 서버)
+  # vllm-server:
+  #   image: vllm/vllm-openai:latest
+  #   container_name: vllm-server
+  #   restart: unless-stopped
+  #   networks:
+  #     - demo
+  #     - llm_default
+  #   ports:
+  #     - "8999:8000"   # 외부 8999 -> 컨테이너 8000
+  #   entrypoint: python3
+
+  #   volumes:
+  #     - ./models:/models
+  #   command: -m vllm.entrypoints.openai.api_server --port=8000 --host=0.0.0.0 ${VLLM_ARGS}
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 1
+  #             capabilities: [gpu]
+  #   healthcheck:
+  #     test: [ "CMD", "curl", "-f", "http://0.0.0.0:8000/v1/models" ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 20
+  # llama-cpp-server:
+  #   container_name: llama-cpp-server
+  #   restart: unless-stopped
+  #   build: 
+  #     context: ./llama-cpp
+  #     dockerfile: Dockerfile.llama-cpp
+  #   ports:
+  #     - "8999:8000"
+
+  #   runtime: nvidia
+  #   environment:
+  #     - NVIDIA_VISIBLE_DEVICES=all
+
+  #   volumes:
+  #     - ./llama-cpp:/app
+  #     - ./models:/models
+
+  # llama cpp (GPU)
+  # llama-cpp-openai-server:
+  #   build:
+  #     context: ./llama-cpp
+  #     dockerfile: Dockerfile.llama-cpp
+  #   ports:
+  #     - "8999:8080"
+  #   runtime: nvidia
+  #   environment:
+  #     - NVIDIA_VISIBLE_DEVICES=all
+  #   volumes:
+  #     - ./models:/models
+  #     - ./llama-cpp:/workspace
+  #   container_name: llama-cpp-openai-server
+

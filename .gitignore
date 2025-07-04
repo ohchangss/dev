@@ -2,3 +2,9 @@ LLM/confg/huggingface.py
 LLM/volumes
 LLM/self-hosted-ai-starter-kit
 LLM/n8n/n8n_custom_node/*
+LLM/n8n/models/*
+*.pyc*
+LLM/n8n/n8n_custom_node/*
+LLM/n8n/models/*
+*.gguf
+LLM/n8n/ollama/*
