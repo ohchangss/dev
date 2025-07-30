@@ -1,12 +1,18 @@
 FROM python:3.11-slim
 
-# Gradio 설치
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir fastapi uvicorn bs4 trafilatura fastapi_router_controller httpx tritonclient grpcio-tools packaging langchain_core langchain
+RUN apt update && apt install -y wget
+RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+    apt install -y ./google-chrome-stable_current_amd64.deb
 
+COPY . /fastapi-server
 
-# 작업 디렉토리 생성
+WORKDIR /fastapi-server
+RUN chmod +x ./entrypoint.sh
+
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
 WORKDIR /fastapi-server/app
 
 EXPOSE 9999
-
+CMD ["/bin/sh","/fastapi-server/entrypoint.sh"]

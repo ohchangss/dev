@@ -75,19 +75,19 @@ class OllamaTritonController():
             return {"status":400,
                 "error": str(e)}
 
-    @controller.route.post('/api/chat', tags=['ollama-controller'], summary="API POST Ollama Controller")
-    async def ollama_generate(self, request: Request):
-        """
-        {'model': 'llama3.2-1B-Instruct', 'options': {}, 
-        'messages': [{'role': 'system', 'content': 'You are a helpful assistant'}, 
-        {'role': 'user', 'content': 'asd'}], 'stream': True}
+    # @controller.route.post('/api/chat', tags=['ollama-controller'], summary="API POST Ollama Controller")
+    # async def ollama_generate(self, request: Request):
+    #     """
+    #     {'model': 'llama3.2-1B-Instruct', 'options': {}, 
+    #     'messages': [{'role': 'system', 'content': 'You are a helpful assistant'}, 
+    #     {'role': 'user', 'content': 'asd'}], 'stream': True}
         
-        """
-        requests = dict(request.json())
-        """Triton에 텍스트 생성 요청"""     
-        service = await self.get_service(request)
-        self.loaded_model_name = requests['model']
-        messages = requests['messages']
-        # if not self.loaded_model_name:
-            # self.loaded_model_name = await service.get_model_name()
-        return await service.infer_text_python(self.loaded_model_name, messages)
+    #     """
+    #     requests = dict(request.json())
+    #     """Triton에 텍스트 생성 요청"""     
+    #     service = await self.get_service(request)
+    #     self.loaded_model_name = requests['model']
+    #     messages = requests['messages']
+    #     # if not self.loaded_model_name:
+    #         # self.loaded_model_name = await service.get_model_name()
+    #     return await service.infer_text_python(self.loaded_model_name, messages)

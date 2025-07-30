@@ -3,8 +3,14 @@ LLM/volumes
 LLM/self-hosted-ai-starter-kit
 LLM/n8n/n8n_custom_node/*
 LLM/n8n/models/*
+*/__pycache__/
+
 *.pyc*
 LLM/n8n/n8n_custom_node/*
 LLM/n8n/models/*
 *.gguf
 LLM/n8n/ollama/*
+LLM/n8n/llama-cpp/*
+LLM/n8n/fastapi-server/test.py
+*.env
+LLM/n8n/llama-cpp/llama.cpp

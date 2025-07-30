@@ -95,7 +95,8 @@ services:
       - "9999:9999"
     volumes:
       - ./fastapi-server:/fastapi-server
-    entrypoint: ["/bin/sh", "/fastapi-server/entrypoint.sh"]
+    env_file:
+      - ./fastapi-server/.env
 
   postgres:
     image: postgres:16-alpine
